@@ -7,6 +7,7 @@ const {
   updatePost,
   publishPost,
   deletePost,
+  getFeed,
 } = require("../modules/posts/postController");
 
 const protect = require("../middleware/auth");
@@ -24,6 +25,7 @@ router.get("/me", getMyPosts); // Get user's own posts
 router.patch("/:id", updatePost); // Update post
 router.patch("/:id/publish", publishPost); // Publish a draft
 router.delete("/:id", deletePost); // Delete post
+router.get("/feed", getFeed);
 
 router.get("/:id", getSinglePost); // Get single published post
 
