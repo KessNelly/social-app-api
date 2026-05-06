@@ -16,8 +16,10 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 const authRoutes = require("./routes/authRoutes");
+const postRoutes = require("./routes/postRoutes");
 
 app.use("/api/auth", authRoutes);
+app.use("/api/posts", postRoutes);
 
 app.get("/", (req, res) => {
   res.json({
