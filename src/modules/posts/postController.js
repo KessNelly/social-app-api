@@ -55,14 +55,28 @@ const createPost = async (req, res, next) => {
 // Get All Published Posts (Public, Search, Sort, Paginated)
 const getPublishedPosts = async (req, res, next) => {
   try {
-    const { query, sort, page, limit } = buildQuery(req.query);
-    query.state = "published";
+    const { search, sort = "-createdAt" } = req.query;
+    const { page, limit, skip } = req.pagination || {
+      page: 1,
+      limit: 20,
+      skip: 0,
+    };
+
+    const query = { state: "published" };
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { content: { $regex: search, $options: "i" } },
+        { tags: { $regex: search, $options: "i" } },
+      ];
+    }
 
     const posts = await Post.find(query)
       .populate("author", "first_name last_name username avatar")
       .sort(sort)
       .limit(limit)
-      .skip((page - 1) * limit);
+      .skip(skip);
 
     const total = await Post.countDocuments(query);
 
@@ -202,16 +216,19 @@ const deletePost = async (req, res, next) => {
 // Get Feed - Published Posts
 const getFeed = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, sort = "-createdAt" } = req.query;
+    const { sort = "-createdAt" } = req.query;
+    const { page, limit, skip } = req.pagination || {
+      page: 1,
+      limit: 20,
+      skip: 0,
+    };
 
-    // Get IDs of users being followed
     const Follow = require("../follows/followModel");
     const following = await Follow.find({ follower: req.user._id }).select(
       "following"
     );
     const followingIds = following.map((f) => f.following);
 
-    // Include own posts + following users' posts
     const query = {
       state: "published",
       author: { $in: [...followingIds, req.user._id] },
@@ -220,8 +237,8 @@ const getFeed = async (req, res, next) => {
     const posts = await Post.find(query)
       .populate("author", "first_name last_name username avatar")
       .sort(sort)
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit));
+      .limit(limit)
+      .skip(skip);
 
     const total = await Post.countDocuments(query);
 
@@ -230,7 +247,7 @@ const getFeed = async (req, res, next) => {
       count: posts.length,
       total,
       totalPages: Math.ceil(total / limit),
-      currentPage: Number(page),
+      currentPage: page,
       posts,
     });
   } catch (error) {
