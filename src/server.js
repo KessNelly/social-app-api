@@ -28,12 +28,7 @@ app.use("/api/likes", likeRoutes);
 app.get("/", (req, res) => {
   res.json({
     message: "Social Media API is running",
-    endpoints: {
-      auth: "/api/auth",
-      users: "/api/users",
-      posts: "/api/posts",
-      feed: "/api/feed",
-    },
+    version: "1.0.0",
   });
 });
 
