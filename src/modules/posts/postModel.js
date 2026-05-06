@@ -50,5 +50,17 @@ postSchema.index({ createdAt: -1 });
 postSchema.index({ like_count: -1 });
 postSchema.index({ tags: 1 });
 
+//management of likes
+postSchema.methods.incrementLike = async function () {
+  this.like_count += 1;
+  return this.save();
+};
+
+postSchema.methods.decrementLike = async function () {
+  this.like_count = Math.max(0, this.like_count - 1);
+  return this.save();
+};
+
 const Post = mongoose.model("Post", postSchema);
+
 module.exports = Post;
