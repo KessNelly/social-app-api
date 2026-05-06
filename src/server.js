@@ -15,16 +15,9 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
-  message: {
-    success: false,
-    message: "Too many requests, please try again later.",
-  },
-});
-app.use("/api/", limiter);
+const authRoutes = require("./routes/authRoutes");
+
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.json({
