@@ -199,6 +199,45 @@ const deletePost = async (req, res, next) => {
   }
 };
 
+// Get Feed - Published Posts
+const getFeed = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, sort = "-createdAt" } = req.query;
+
+    // Get IDs of users being followed
+    const Follow = require("../follows/followModel");
+    const following = await Follow.find({ follower: req.user._id }).select(
+      "following"
+    );
+    const followingIds = following.map((f) => f.following);
+
+    // Include own posts + following users' posts
+    const query = {
+      state: "published",
+      author: { $in: [...followingIds, req.user._id] },
+    };
+
+    const posts = await Post.find(query)
+      .populate("author", "first_name last_name username avatar")
+      .sort(sort)
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+
+    const total = await Post.countDocuments(query);
+
+    res.json({
+      success: true,
+      count: posts.length,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: Number(page),
+      posts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createPost,
   getPublishedPosts,
@@ -207,4 +246,5 @@ module.exports = {
   updatePost,
   publishPost,
   deletePost,
+  getFeed,
 };
