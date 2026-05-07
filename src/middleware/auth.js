@@ -4,43 +4,43 @@ const User = require("../modules/users/userModel");
 
 const protect = async (req, res, next) => {
   try {
-    let token;
+    let token = null;
 
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
     ) {
       token = req.headers.authorization.split(" ")[1];
+      console.log(
+        "Token Extracted:",
+        token ? token.substring(0, 20) + "..." : "null"
+      );
     }
 
     if (!token) {
-      throw new AppError(
-        "You are not logged in. Please login to access this route.",
-        401
-      );
+      return next(new AppError("No token provided. Please login.", 401));
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Check if user still exists
-    const currentUser = await User.findById(decoded.id);
+    const currentUser = await User.findById(decoded.id).select("-password");
     if (!currentUser) {
-      throw new AppError(
-        "The user belonging to this token no longer exists.",
-        401
-      );
+      console.log("User not found");
+      return next(new AppError("User not found", 401));
     }
 
     req.user = currentUser;
+    console.log("Authentication Successful for user:", currentUser.username);
     next();
   } catch (error) {
+    console.log("Auth Middleware Error:", error.name, "-", error.message);
     if (error.name === "TokenExpiredError") {
-      return next(
-        new AppError("Your token has expired. Please login again.", 401)
-      );
+      return next(new AppError("Token has expired", 401));
     }
-    next(error);
+    if (error.name === "JsonWebTokenError") {
+      return next(new AppError("Invalid token", 401));
+    }
+    next(new AppError("Authentication failed", 401));
   }
 };
 
